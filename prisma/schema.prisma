@@ -18,7 +18,7 @@ model Product {
   attributes       String
   price            Float
   sale_price       Float
-  stock            BigInt
+  stock            Int
   images           String // a url to an image, not the image itsself
   tax              Float
   categories       Category[] @relation(fields: [categoryIDs], references: [id])

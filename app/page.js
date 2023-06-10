@@ -2,6 +2,46 @@
 import { useState, useEffect } from 'react';
 
 function Page() {
+  const [selectedDeleteCategoryOption, setSelectedDeleteCategoryOption] = useState("");
+  const [selectedChangeCategory, setSelectedChangeCategory] = useState({});
+  const [selectedChangeCategoryOption, setSelectedChangeCategoryOption] = useState("");
+
+  const [categories, setCategories] = useState([]);
+  const [fetchCategoryTrigger, setFetchCategoryTrigger] = useState(false);
+
+  const [categoriesCheckedToAdd, setCategoriesCheckedToAdd] = useState([]);
+
+  const [productAddPrice, setProductAddPrice] = useState(0);
+  const [productAddTax, setProductAddTax] = useState(0);
+  const [productAddSalesPrice, setProductAddSalesPrice] = useState(0);
+
+  const [products, setProducts] = useState([]);
+  const [fetchProductTrigger, setFetchProductTrigger] = useState(false);
+
+  useEffect(() => {
+    const calculateSalesPrice = () => {
+      setProductAddSalesPrice((parseFloat(productAddPrice) * (1.0 + parseFloat(productAddTax))).toFixed(2));
+    };
+    calculateSalesPrice();
+    
+  }, [productAddPrice, productAddTax]);
+
+  const handleProductAddPriceChange = (event) => {
+    setProductAddPrice(event.target.value);
+  };
+
+  const handleProductAddTaxChange = (event) => {
+    setProductAddTax(event.target.value);
+  };
+
+  const fetchCategoryData = () => {
+    setFetchCategoryTrigger((prevState) => !prevState);
+  };
+
+  const fetchProductData = () => {
+    setFetchProductTrigger((prevState) => !prevState);
+  };
+
   const handleChangeCategoryInput = (event) => {
     const { name, value } = event.target;
     setSelectedChangeCategory(prevState => ({
@@ -9,15 +49,7 @@ function Page() {
       [name]: value
     }));
   };
-
-  const [fetchCategoryTrigger, setFetchCategoryTrigger] = useState(false);
-  const fetchCategoryData = () => {
-    setFetchCategoryTrigger((prevState) => !prevState);
-  };
-
-  const [selectedChangeCategory, setSelectedChangeCategory] = useState({});
-
-  const [selectedChangeCategoryOption, setSelectedChangeCategoryOption] = useState("");
+  
   const handleSelectChangeCategoryOption = (event) => {
     setSelectedChangeCategory(categories.find(category => category.id === event.target.value));
     setSelectedChangeCategoryOption(event.target.value);
@@ -74,10 +106,23 @@ function Page() {
     }
   }
 
-  const [selectedDeleteCategoryOption, setSelectedDeleteCategoryOption] = useState("");
   const handleSelectedDeleteCategoryOption = (event) => {
     setSelectedDeleteCategoryOption(event.target.value);
   }
+
+  const handleAddCheckboxChange = (event) => {
+    const value = event.target.value;
+    const isChecked = event.target.checked;
+
+    if (isChecked) {
+      setCategoriesCheckedToAdd((prevCheckedValues) => [...prevCheckedValues, value]);
+    } else {
+      setCategoriesCheckedToAdd((prevCheckedValues) =>
+        prevCheckedValues.filter((item) => item !== value)
+      );
+    }
+  };
+
   const handleAddCategory = async (event) => {
     event.preventDefault();
     const { name, images, description } = event.target.elements;
@@ -104,7 +149,38 @@ function Page() {
     }
   };
 
-  const [categories, setCategories] = useState([]);
+  const handleAddProduct = async (event) => {
+    event.preventDefault();
+    const { name, description, long_description, attributes, price, sale_price, stock, images, tax } = event.target.elements;
+    try {
+      const response = await fetch('/api/product/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.value,
+          description: description.value,
+          long_description: long_description.value,
+          attributes: attributes.value,
+          price: parseFloat(price.value),
+          sale_price: parseFloat(sale_price.value),
+          stock: parseInt(stock.value),
+          images: images.value,
+          tax: parseFloat(tax.value),
+          categories: categoriesCheckedToAdd,
+        })
+      });
+      if (response.ok) {
+        fetchProductData()
+      } else {
+        console.error('Error submitting form:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error)
+    }
+  }
+
   // fetch the data on trigger and page load
   useEffect(() => {
     const fetchCategories = async () => {
@@ -114,6 +190,17 @@ function Page() {
     };
     fetchCategories();
   }, [fetchCategoryTrigger]);
+
+  // fetch the data on trigger and page load
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const response = await fetch('/api/product/get', { method: "GET" });
+      const data = await response.json();
+      setProducts(data);
+      console.log(data)
+    };
+    fetchProducts();
+  }, [fetchProductTrigger]);
 
   return (
     <div className="grid">
@@ -208,7 +295,7 @@ function Page() {
         <div className="col"></div>
         <div className="col-10 col-sm-8 col-md-6 col-lg-4 border rounded-3 p-3">
           <h1>Add Product</h1>
-          <form>
+          <form onSubmit={handleAddProduct}>
             <div className="mb-3">
               <label className="form-label" htmlFor="name">Name:</label>
               <input className="form-control" type="text" id="name" name="name" required></input>
@@ -231,13 +318,13 @@ function Page() {
 
             <div className="mb-3">
               <label className="form-label" htmlFor="price">Price:</label>
-              <input className="form-control" type="number" min="0" step="0.01" type="text" id="price" name="price" required></input>
+              <input className="form-control" type="number" min="0" step="0.01" type="text" id="price" name="price" onChange={handleProductAddPriceChange} value={productAddPrice} required></input>
             </div>
 
             <div className="mb-3">
               {/* To be auto calculated from price and tax. */}
               <label className="form-label" htmlFor="sale_price">Sale Price:</label>
-              <input className="form-control" type="number" min="0" step="0.01" type="text" id="sale_price" name="sale_price" readOnly></input>
+              <input className="form-control" type="number" min="0" step="0.01" type="text" id="sale_price" name="sale_price" value={productAddSalesPrice} readOnly></input>
             </div>
 
             <div className="mb-3">
@@ -247,43 +334,26 @@ function Page() {
 
             <div className="mb-3">
               {/* Should be a comma separeted list: */}
-              <label className="form-label" htmlFor="images">Image links as comma separated list:</label>
-              <input className="form-control" type="text" id="images" name="images" required></input>
+              <label className="form-label" htmlFor="images">Images:</label>
+              <input className="form-control" type="text" id="images" name="images" placeholder="Comma separated list here."></input>
             </div>
 
             <div className="mb-3">
-              <label className="form-label" htmlFor="images">Tax in %:</label>
-              <input className="form-control" type="text" id="images" name="images" required></input>
+              <label className="form-label" htmlFor="tax">Tax:</label>
+              <input className="form-control" type="text" id="tax" name="tax" placeholder="0.01 means 1%" onChange={handleProductAddTaxChange} value={productAddTax} required></input>
             </div>
 
             <div className="mb-3">
               <label className="form-label">Categories:</label>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" value="CategoryAId" id="category_a"></input>
-                <label className="form-check-label" htmlFor="category_a">
-                  Category Name A
-                </label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" value="CategoryBId" id="category_b"></input>
-                <label className="form-check-label" htmlFor="category_b">
-                  Category Name B
-                </label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" value="CategoryCId" id="category_c"></input>
-                <label className="form-check-label" htmlFor="category_c">
-                  Category Name C
-                </label>
-              </div>
-              <div className="form-check">
-                <input className="form-check-input" type="checkbox" value="CategoryDId" id="category_d"></input>
-                <label className="form-check-label" htmlFor="category_d">
-                  Category Name D
-                </label>
-              </div>
+              {categories.map((category, index) => (
+                <div key={index} className="form-check">
+                  <input className="form-check-input" type="checkbox" value={category.id} id={`category_${category.id}`} onChange={handleAddCheckboxChange}></input>
+                  <label className="form-check-label" htmlFor={`category_${category.id}`}>
+                    {category.name}
+                  </label>
+                </div>
+              ))}
             </div>
-
             <button className="btn btn-primary">Submit</button>
           </form>
         </div>
@@ -339,7 +409,7 @@ function Page() {
             </div>
 
             <div className="mb-3">
-              <label className="form-label" htmlFor="images">Image links as comma separated list:</label>
+              <label className="form-label" htmlFor="images">Images:</label>
               <input className="form-control" type="text" id="images" name="images" required></input>
             </div>
 
