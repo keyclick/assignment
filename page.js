@@ -1,13 +1,119 @@
-import 'bootstrap/dist/css/bootstrap.css';
-import { Tooltip } from 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import './App.css';
+'use client';
+import { useState, useEffect } from 'react';
 
-function App() {
-  // This sometimes works and sometimes it doesnt:
-  // Luckily Mr. Ajith does the react stuff this time. :D
-  // Source:  (https://getbootstrap.com/docs/5.3/components/tooltips/#enable-tooltips)
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl))
+function Page() {
+  const handleChangeCategoryInput = (event) => {
+    const { name, value } = event.target;
+    setSelectedChangeCategory(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const [fetchCategoryTrigger, setFetchCategoryTrigger] = useState(false);
+  const fetchCategoryData = () => {
+    setFetchCategoryTrigger((prevState) => !prevState);
+  };
+
+  const [selectedChangeCategory, setSelectedChangeCategory] = useState({});
+
+  const [selectedChangeCategoryOption, setSelectedChangeCategoryOption] = useState("");
+  const handleSelectChangeCategoryOption = (event) => {
+    setSelectedChangeCategory(categories.find(category => category.id === event.target.value));
+    setSelectedChangeCategoryOption(event.target.value);
+  };
+
+  const handleChangeCategory = async (event) => {
+    event.preventDefault();
+    const { id, name, images, description } = event.target.elements;
+    try {
+      const response = await fetch('/api/category/set', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedChangeCategoryOption,
+          name: name.value,
+          images: images.value,
+          description: description.value,
+        }),
+      });
+    
+      if (response.ok) {
+        fetchCategoryData()
+      } else {
+        console.error('Error submitting form:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  }
+
+  const handleDeleteCategory = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/category/delete', {
+        // Don't use DELETE here.
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedDeleteCategoryOption,
+        }),
+      });
+    
+      if (response.ok) {
+        fetchCategoryData()
+      } else {
+        console.error('Error deleting category:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+  }
+
+  const [selectedDeleteCategoryOption, setSelectedDeleteCategoryOption] = useState("");
+  const handleSelectedDeleteCategoryOption = (event) => {
+    setSelectedDeleteCategoryOption(event.target.value);
+  }
+  const handleAddCategory = async (event) => {
+    event.preventDefault();
+    const { name, images, description } = event.target.elements;
+    try {
+      const response = await fetch('/api/category/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.value,
+          images: images.value,
+          description: description.value,
+        }),
+      });
+    
+      if (response.ok) {
+        fetchCategoryData()
+      } else {
+        console.error('Error submitting form:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
+
+  const [categories, setCategories] = useState([]);
+  // fetch the data on trigger and page load
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const response = await fetch('/api/category/get', { method: "GET" });
+      const data = await response.json();
+      setCategories(data);
+    };
+    fetchCategories();
+  }, [fetchCategoryTrigger]);
 
   return (
     <div className="grid">
@@ -294,25 +400,24 @@ function App() {
         </div>
         <div className="col"></div>
       </div>
-
       <div className="row my-3">
         <div className="col"></div>
         <div className="col-10 col-sm-8 col-md-6 col-lg-4 border rounded-3 p-3">
           <h1>Add Category</h1>
-          <form>
+          <form onSubmit={handleAddCategory}>
             <div className="mb-3">
               <label className="form-label" htmlFor="name">Name:</label>
               <input className="form-control" type="text" id="name" name="name" required></input>
             </div>
             <div className="mb-3">
-              <label className="form-label" htmlFor="name">Image links as comma separated list:</label>
-              <input className="form-control" type="text" id="name" name="name" required></input>
+              <label className="form-label" htmlFor="images">Images:</label>
+              <input className="form-control" type="text" id="images" name="images" placeholder="Comma separated list here." required></input>
             </div>
             <div className="mb-3">
-              <label className="form-label" htmlFor="name">Description:</label>
-              <input className="form-control" type="text" id="name" name="name" required></input>
+              <label className="form-label" htmlFor="description">Description:</label>
+              <input className="form-control" type="text" id="description" name="description" required></input>
             </div>
-            <button className="btn btn-primary">Submit</button>
+            <button className="btn btn-primary" ype="submit">Submit</button>
           </form>
         </div>
         <div className="col"></div>
@@ -321,29 +426,33 @@ function App() {
         <div className="col"></div>
         <div className="col-10 col-sm-8 col-md-6 col-lg-4 border rounded-3 p-3">
           <h1>Change Category</h1>
-          <form>
+          <form onSubmit={handleChangeCategory}>
             <div className="mb-3">
               <label className="form-label" htmlFor="category">Category:</label>
-              <select className="form-select" id="category" name="category">
-                <option value="CategoryId">Category Name A</option>
-                <option value="CategoryId">Category Name A</option>
-                <option value="CategoryId">Category Name C</option>
-                <option value="CategoryId">Category Name D</option>
+              <select className="form-select" id="category" name="category" value={selectedChangeCategoryOption} onChange={handleSelectChangeCategoryOption}>
+                <option value="">Select an option</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category.id}>{category.name}</option>
+                ))}
               </select>
             </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="name">Name:</label>
-              <input className="form-control" type="text" id="name" name="name" required></input>
-            </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="name">Image links as comma separated list:</label>
-              <input className="form-control" type="text" id="name" name="name" required></input>
-            </div>
-            <div className="mb-3">
-              <label className="form-label" htmlFor="name">Description:</label>
-              <input className="form-control" type="text" id="name" name="name" required></input>
-            </div>
-            <button className="btn btn-primary">Submit</button>
+            {selectedChangeCategoryOption && (
+              <>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="name">Name:</label>
+                <input className="form-control" type="text" id="name" name="name" value={selectedChangeCategory.name} onChange={handleChangeCategoryInput} required></input>
+              </div>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="images">Image:</label>
+                <input className="form-control" type="text" id="images" name="images" value={selectedChangeCategory.images} placeholder="Comma separated list here." onChange={handleChangeCategoryInput} required></input>
+              </div>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="description">Description:</label>
+                <input className="form-control" type="text" id="description" name="description" value={selectedChangeCategory.description} onChange={handleChangeCategoryInput} required></input>
+              </div>
+              <button className="btn btn-primary">Submit</button>
+              </>
+            )}
           </form>
         </div>
         <div className="col"></div>
@@ -352,14 +461,14 @@ function App() {
         <div className="col"></div>
         <div className="col-10 col-sm-8 col-md-6 col-lg-4 border rounded-3 p-3">
           <h1>Delete Category</h1>
-          <form>
+          <form onSubmit={handleDeleteCategory}>
             <div className="mb-3">
               <label className="form-label" htmlFor="category">Category:</label>
-              <select className="form-select" id="category" name="category">
-                <option value="CategoryId">Category Name A</option>
-                <option value="CategoryId">Category Name A</option>
-                <option value="CategoryId">Category Name C</option>
-                <option value="CategoryId">Category Name D</option>
+              <select className="form-select" id="category" name="category" value={selectedDeleteCategoryOption} onChange={handleSelectedDeleteCategoryOption}>
+                <option value="">Select an option</option>
+                {categories.map((category, index) => (
+                  <option key={index} value={category.id}>{category.name}</option>
+                ))}
               </select>
             </div>
             <button className="btn btn-primary">Delete</button>
@@ -371,4 +480,4 @@ function App() {
   );
 }
 
-export default App;
+export default Page;
