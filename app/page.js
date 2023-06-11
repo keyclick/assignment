@@ -349,12 +349,10 @@ function Page() {
             <h2>{selectedViewProduct.name}</h2>
             
             {/* Category name and description go here: */}
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description A Goes Here">Men</span>
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description B Goes Here">Women</span>
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description C Goes Here">Unisex</span>
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description D Goes Here">Casual</span>
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description E Goes Here">Comfort</span>
-            <span className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title="Category Description F Goes Here">Casual</span>
+            
+            {categories.map((category, index) => (
+              <span key={index} className="badge bg-primary me-2" data-bs-toggle="tooltip" data-bs-title={category.description}>{category.name}</span>
+            ))}
 
             <div className="my-3">
               {/* Short description: */}
