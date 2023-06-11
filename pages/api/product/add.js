@@ -19,7 +19,6 @@ export default async function handler(req, res) {
                     tax,
                 },
             });
-
             await prisma.Product.update({
                 where: {
                   id: new_product.id,
@@ -32,7 +31,6 @@ export default async function handler(req, res) {
                   },
                 },
               });
-
             res.status(200)
         } catch (error) {
             console.error('Error saving data:', error);

@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-
 export default async function handler(req, res) {
     // Don't use DELETE here.
     if (req.method === 'POST') {
