@@ -1,10 +1,16 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
 const port = 5000;
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  })
+);
 
 // Connect to MongoDB
 mongoose
@@ -19,8 +25,27 @@ mongoose
     console.log("Error connecting to MongoDB:", error);
   });
 
-// Define the Product schema
-const productSchema = new mongoose.Schema({
+app.post("/api/category/add", (req, res) => {
+  try {
+    const { name, images, description } = req.body;
+    const category = new Category({
+      name,
+      images,
+      description,
+    });
+    category.save();
+    console.log("We have reached Server");
+  } catch (error) {
+    console.error("Error saving data:", error);
+    res.status(500).json({ error: "An error occurred while saving data." });
+  }
+});
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Create the Product model
+const Product = mongoose.model("Product", {
   name: String,
   description: String,
   long_description: String,
@@ -32,8 +57,8 @@ const productSchema = new mongoose.Schema({
   tax: Number,
 });
 
-// Define the Category schema
-const categorySchema = new mongoose.Schema({
+// Create the Category model
+const Category = mongoose.model("Category", {
   name: String,
   images: String,
   description: String,
@@ -42,12 +67,6 @@ const categorySchema = new mongoose.Schema({
     ref: "Product",
   },
 });
-
-// Create the Product model
-const Product = mongoose.model("Product", productSchema);
-
-// Create the Category model
-const Category = mongoose.model("Category", categorySchema);
 
 module.exports = { Product, Category };
 

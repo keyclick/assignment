@@ -1,23 +1,32 @@
 import React from "react";
+import { useState } from "react";
 
-export default function AddProduct() {
+
+export default function ControlledComponent() {
+  const[inputValue, setInputValue]=useState('')
+
+  const handleChange=(Event)=>{
+    setInputValue(Event.target.value);
+  }
   return (
     <div className="row my-3">
       <div className="col"></div>
       <div className="col-10 col-sm-8 col-md-6 col-lg-4 border rounded-3 p-3">
         <h1>Add Product</h1>
-        <form className="form">
+        <form className="formAddProduct" method="POST" action="/api/products" >
           <div className="mb-3">
             <label className="form-label" htmlFor="name">
-              Name:
+              Name:{inputValue}
+              <input
+                className="form-control"
+                type="text"
+                id="name"
+                name="name"
+                value={inputValue}
+                onChange={handleChange}
+                required
+              ></input>
             </label>
-            <input
-              className="form-control"
-              type="text"
-              id="name"
-              name="name"
-              required
-            ></input>
           </div>
 
           <div className="mb-3">
@@ -113,7 +122,6 @@ export default function AddProduct() {
               type="text"
               id="images"
               name="images"
-              
             ></input>
           </div>
 
