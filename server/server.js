@@ -25,6 +25,42 @@ mongoose
     console.log("Error connecting to MongoDB:", error);
   });
 
+//Add Product
+app.post("/api/product/add", (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      long_description,
+      attributes,
+      price,
+      sale_price,
+      stock,
+      images,
+      tax,
+      category,
+    } = req.body;
+    const product = new Product({
+      name,
+      description,
+      long_description,
+      attributes,
+      price,
+      sale_price,
+      stock,
+      images,
+      tax,
+      category,
+    });
+    product.save();
+    console.log("AddProduct have reached Server");
+  } catch (error) {
+    console.error("Error saving data:", error);
+    res.status(500).json({ error: "An error occurred while saving data." });
+  }
+});
+
+//Add Category
 app.post("/api/category/add", (req, res) => {
   try {
     const { name, images, description } = req.body;
@@ -34,7 +70,7 @@ app.post("/api/category/add", (req, res) => {
       description,
     });
     category.save();
-    console.log("We have reached Server");
+    console.log("AddCategory have reached Server");
   } catch (error) {
     console.error("Error saving data:", error);
     res.status(500).json({ error: "An error occurred while saving data." });
